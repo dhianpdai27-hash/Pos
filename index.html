@@ -1,258 +1,517 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BUMDes MANDIRI - PDF Version</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body { background-color: #f8fafc; padding-bottom: 90px; }
-        .app-card { background: white; border-radius: 12px; padding: 15px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
-        .tab { display: none; }
-        .tab.active { display: block; }
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e2e8f0; height: 75px; z-index: 1000; }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #64748b; border: none; background: none; }
-        .nav-item.active { color: #2563eb; }
-    </style>
-</head>
-<body>
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Universal POS v1.0</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js" defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Poppins', sans-serif; padding-bottom: 90px; background-color: #f8fafc; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    .nav-active { color: #4f46e5 !important; border-top: 3px solid #4f46e5; background-color: #f5f3ff; }
+    .item-icon-circle { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-weight: 600; color: white; text-transform: uppercase; margin-bottom: 0.75rem; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    @media print { .no-print { display: none !important; } }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+  </style>
+ </head>
+ <body>
+  <div id="app">
+   <header class="bg-indigo-600 text-white shadow-md sticky top-0 z-40 px-4 py-3 no-print">
+    <div class="flex justify-between items-center max-w-7xl mx-auto">
+     <div>
+      <h1 id="header-store-name" class="text-lg font-bold italic uppercase tracking-wider">Loading...</h1>
+      <p id="header-address" class="text-[10px] text-indigo-100 italic opacity-90"></p>
+     </div>
+     <div id="current-date" class="text-[10px] bg-indigo-500 px-2 py-1 rounded font-medium"></div>
+    </div>
+   </header>
 
-<div class="p-3">
-    <div class="bg-dark text-white p-4 rounded-4 mb-4 shadow">
-        <h4 class="fw-bold mb-0 text-info">BUMDes MANDIRI</h4>
-        <small id="tgl-info"></small>
-        <hr class="opacity-25">
-        <div class="d-flex justify-content-between text-warning fw-bold">
-            <small>Saldo Bersih:</small>
-            <h5 id="dash-saldo">Rp 0</h5>
+   <main class="p-4 max-w-7xl mx-auto">
+    <div id="content-kasir" class="tab-content active">
+     <div class="grid lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+       <div id="menu-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         </div>
+      </div>
+      <div class="lg:col-span-1">
+       <div class="bg-white rounded-2xl shadow-sm p-4 sticky top-20 border border-slate-100">
+        <h2 class="font-bold text-slate-800 mb-3 flex items-center gap-2 text-sm uppercase">🛒 Pesanan</h2>
+        <div id="cart-items" class="space-y-3 max-h-[40vh] overflow-y-auto scrollbar-hide mb-4">
+         <p class="text-center text-slate-400 text-xs py-10">Keranjang kosong</p>
+        </div>
+        <div class="border-t pt-3 space-y-3">
+         <div class="flex justify-between text-xl font-bold text-indigo-600">
+          <span>Total</span> <span id="cart-total" class="mono">Rp 0</span>
+         </div>
+         <input type="number" id="payment-input" oninput="calculateChange()" placeholder="Jumlah Bayar..." class="w-full px-4 py-3 border border-slate-200 rounded-xl mono focus:ring-2 focus:ring-indigo-500 outline-none text-lg">
+         <div class="flex justify-between text-sm font-medium">
+          <span class="text-slate-500">Kembalian</span> <span id="change-amount" class="mono text-green-600">Rp 0</span>
+         </div>
+         <div class="flex gap-2">
+          <button onclick="clearCart()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-200 transition">Batal</button>
+          <button onclick="processPayment()" id="btn-pay" disabled class="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm disabled:opacity-50 shadow-lg shadow-indigo-100">Bayar & Cetak</button>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
     </div>
 
-    <div id="tab-kasir" class="tab active">
-        <div class="app-card">
-            <label class="small fw-bold text-muted">PETUGAS ADMIN</label>
-            <input type="text" id="admin" class="form-control mb-2" placeholder="Nama Admin">
-            <div class="row g-2">
-                <div class="col-6">
-                    <label class="small fw-bold text-muted">BERAT (KG)</label>
-                    <input type="number" id="berat" class="form-control" placeholder="0.0" oninput="hitung()">
-                </div>
-                <div class="col-6">
-                    <label class="small fw-bold text-muted">HARGA (RP)</label>
-                    <input type="number" id="harga" class="form-control" placeholder="25000" oninput="hitung()">
-                </div>
-            </div>
-        </div>
-        <div class="app-card bg-primary text-white text-center">
-            <small class="opacity-75">TOTAL BAYAR</small>
-            <h2 id="total-display" class="fw-bold">Rp 0</h2>
-        </div>
-        <button onclick="simpanTrx()" class="btn btn-dark w-100 py-3 fw-bold">SIMPAN & DOWNLOAD NOTA (PDF)</button>
+    <div id="content-menu" class="tab-content">
+     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div class="p-4 bg-slate-50 border-b flex justify-between items-center">
+       <h2 class="font-bold text-slate-800">Manajemen Produk</h2>
+       <button onclick="openMenuModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold">+ TAMBAH MENU</button>
+      </div>
+      <div id="menu-list-admin" class="divide-y divide-slate-100">
+       </div>
+     </div>
     </div>
 
-    <div id="tab-biaya" class="tab">
-        <div class="app-card border-start border-danger border-4">
-            <h6 class="fw-bold text-danger">INPUT PENGELUARAN</h6>
-            <input type="text" id="ket-biaya" class="form-control mb-2" placeholder="Keterangan">
-            <input type="number" id="nom-biaya" class="form-control mb-3" placeholder="Nominal Rp">
-            <button onclick="simpanBiaya()" class="btn btn-danger w-100 fw-bold">SIMPAN BIAYA</button>
-        </div>
-        <h6 class="fw-bold small text-muted px-2">DAFTAR BIAYA</h6>
-        <div id="list-biaya-full"></div>
+    <div id="content-laporan" class="tab-content space-y-4">
+     <div class="grid grid-cols-2 gap-4">
+      <div class="bg-indigo-600 p-4 rounded-2xl text-white shadow-lg shadow-indigo-100">
+       <p class="text-[10px] opacity-80 uppercase font-bold">Omzet Hari Ini</p>
+       <p id="report-total" class="text-lg font-bold mono">Rp 0</p>
+      </div>
+      <div class="bg-emerald-500 p-4 rounded-2xl text-white shadow-lg shadow-emerald-100">
+       <p class="text-[10px] opacity-80 uppercase font-bold">Total Transaksi</p>
+       <p id="report-count" class="text-lg font-bold mono">0</p>
+      </div>
+     </div>
+     <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-4">
+      <div class="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+       <button onclick="exportToExcel()" class="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-[10px] font-bold whitespace-nowrap">📊 EXPORT EXCEL</button>
+       <button onclick="exportBackup()" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-[10px] font-bold whitespace-nowrap">💾 BACKUP DATA</button>
+       <label class="bg-amber-100 text-amber-700 px-4 py-2 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer">
+         📂 IMPORT DATA <input type="file" id="importFile" class="hidden" onchange="importBackup(event)">
+       </label>
+       <button onclick="resetAllData()" class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-[10px] font-bold whitespace-nowrap">🗑️ RESET SEMUA</button>
+      </div>
+      <h3 class="font-bold text-slate-800 text-xs mb-3 uppercase tracking-tighter">Riwayat Transaksi</h3>
+      <div id="transaction-list" class="space-y-3">
+       </div>
+     </div>
     </div>
+   </main>
 
-    <div id="tab-riwayat" class="tab">
-        <h6 class="fw-bold small text-muted px-2">RIWAYAT TRANSAKSI (KG & HARGA)</h6>
-        <div id="list-riwayat"></div>
+   <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-[0_-2px_15px_rgba(0,0,0,0.05)] z-50 no-print">
+    <div class="max-w-7xl mx-auto flex justify-around items-center">
+     <button onclick="switchTab('kasir')" id="tab-kasir" class="flex flex-col items-center py-3 px-6 transition-all nav-active">
+      <span class="text-xl">🏪</span><span class="text-[9px] font-bold mt-1 uppercase tracking-tighter text-slate-500">Kasir</span>
+     </button>
+     <button onclick="switchTab('menu')" id="tab-menu" class="flex flex-col items-center py-3 px-6 text-slate-400 transition-all">
+      <span class="text-xl">📋</span><span class="text-[9px] font-bold mt-1 uppercase tracking-tighter text-slate-500">Menu</span>
+     </button>
+     <button onclick="switchTab('laporan')" id="tab-laporan" class="flex flex-col items-center py-3 px-6 text-slate-400 transition-all">
+      <span class="text-xl">📊</span><span class="text-[9px] font-bold mt-1 uppercase tracking-tighter text-slate-500">Data</span>
+     </button>
+     <button onclick="openSettings()" class="flex flex-col items-center py-3 px-6 text-slate-400">
+      <span class="text-xl">⚙️</span><span class="text-[9px] font-bold mt-1 uppercase tracking-tighter text-slate-500">Toko</span>
+     </button>
     </div>
+   </nav>
 
-    <div id="tab-laporan" class="tab">
-        <div class="app-card border-top border-dark border-4">
-            <h6 class="fw-bold small">LAPORAN HARIAN</h6>
-            <input type="date" id="tgl-lap" class="form-control mb-2" onchange="updateLaporan()">
-            <div id="res-harian" class="p-2 bg-light rounded small fw-bold mb-2">Pilih Tanggal</div>
-            <button onclick="cetakLaporan('Harian')" class="btn btn-dark btn-sm w-100">SIMPAN LAPORAN PDF</button>
-        </div>
-        <div class="app-card border-top border-primary border-4">
-            <h6 class="fw-bold small text-primary">LAPORAN BULANAN</h6>
-            <input type="month" id="bln-lap" class="form-control mb-2" onchange="updateLaporan()">
-            <div id="res-bulanan" class="p-2 bg-light rounded small fw-bold mb-2 text-primary">Pilih Bulan</div>
-            <button onclick="cetakLaporan('Bulanan')" class="btn btn-primary btn-sm w-100">SIMPAN LAPORAN PDF</button>
-        </div>
+   <div id="modal-menu" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+     <h3 id="modal-menu-title" class="font-bold text-lg mb-4">Tambah Menu</h3>
+     <div class="space-y-4">
+      <input type="hidden" id="edit-id">
+      <div>
+       <label class="block text-xs font-bold text-slate-500 mb-1">NAMA MENU</label>
+       <input type="text" id="menu-name" class="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Misal: Nasi Goreng">
+      </div>
+      <div>
+       <label class="block text-xs font-bold text-slate-500 mb-1">HARGA (Rp)</label>
+       <input type="number" id="menu-price" class="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500" placeholder="15000">
+      </div>
+      <div>
+       <label class="block text-xs font-bold text-slate-500 mb-1">WARNA IKON</label>
+       <input type="color" id="menu-color" class="w-full h-10 border rounded-xl" value="#6366f1">
+      </div>
+      <div class="flex gap-2 pt-2">
+       <button onclick="closeMenuModal()" class="flex-1 py-2 bg-slate-100 rounded-xl font-bold text-sm">Batal</button>
+       <button onclick="saveMenu()" class="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold text-sm">Simpan</button>
+      </div>
+     </div>
     </div>
+   </div>
 
-    <div id="tab-opsi" class="tab">
-        <div class="app-card">
-            <button onclick="exportExcel()" class="btn btn-success w-100 py-3 fw-bold mb-4">BACKUP KE EXCEL</button>
-            <div class="border-top pt-3">
-                <p class="small fw-bold text-center text-muted">RESTORE DATA</p>
-                <input type="file" id="file-import" class="form-control mb-2">
-                <button onclick="importExcel()" class="btn btn-outline-secondary w-100 btn-sm">PROSES IMPORT</button>
-            </div>
-        </div>
-        <button onclick="resetData()" class="btn btn-link text-danger w-100 mt-5 opacity-25">Reset Semua Data</button>
+   <div id="modal-settings" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-md p-6">
+     <h3 class="font-bold text-lg mb-4">Pengaturan Toko</h3>
+     <div class="space-y-4 text-xs">
+      <div>
+       <label class="block font-bold text-slate-500 mb-1">NAMA TOKO</label>
+       <input type="text" id="set-store-name" class="w-full px-4 py-2 border rounded-xl outline-none">
+      </div>
+      <div>
+       <label class="block font-bold text-slate-500 mb-1">ALAMAT</label>
+       <input type="text" id="set-store-address" class="w-full px-4 py-2 border rounded-xl outline-none">
+      </div>
+      <div>
+       <label class="block font-bold text-slate-500 mb-1">NO. TELP</label>
+       <input type="text" id="set-store-phone" class="w-full px-4 py-2 border rounded-xl outline-none">
+      </div>
+      <div>
+       <label class="block font-bold text-slate-500 mb-1">GOOGLE SHEET ID (API)</label>
+       <input type="text" id="set-gsheet-id" class="w-full px-4 py-2 border rounded-xl outline-none" placeholder="Opsional">
+      </div>
+      <div class="flex gap-2 pt-2">
+       <button onclick="closeSettings()" class="flex-1 py-2 bg-slate-100 rounded-xl font-bold">Batal</button>
+       <button onclick="saveSettings()" class="flex-1 py-2 bg-indigo-600 text-white rounded-xl font-bold">Simpan</button>
+      </div>
+     </div>
     </div>
-</div>
+   </div>
+  </div>
 
-<nav class="bottom-nav shadow-lg">
-    <button class="nav-item active" onclick="nav('kasir', this)">🛒 KASIR</button>
-    <button class="nav-item" onclick="nav('biaya', this)">💸 BIAYA</button>
-    <button class="nav-item" onclick="nav('riwayat', this)">📋 RIWAYAT</button>
-    <button class="nav-item" onclick="nav('laporan', this)">📊 LAPORAN</button>
-    <button class="nav-item" onclick="nav('opsi', this)">⚙️ OPSI</button>
-</nav>
-
-<script>
-    const { jsPDF } = window.jspdf;
-    let db_trx = JSON.parse(localStorage.getItem('db_final_v21_trx')) || [];
-    let db_biaya = JSON.parse(localStorage.getItem('db_final_v21_biaya')) || [];
-
-    window.onload = () => {
-        document.getElementById('tgl-info').innerText = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-        updateDashboard();
-        renderBiaya();
+  <script>
+    // --- DATA STATE ---
+    let settings = JSON.parse(localStorage.getItem('pos_v1_settings')) || {
+      storeName: 'UNIVERSAL POS',
+      storeAddress: 'Jl. Raya No. 123',
+      storePhone: '0812345678',
+      footer: 'Terima Kasih',
+      sheetId: ''
     };
 
-    function nav(s, el) {
-        document.querySelectorAll('.tab').forEach(x => x.style.display = 'none');
-        document.getElementById('tab-' + s).style.display = 'block';
-        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-        if(s === 'riwayat') renderRiwayat();
-        if(s === 'biaya') renderBiaya();
+    let menuItems = JSON.parse(localStorage.getItem('pos_v1_menu')) || [
+      { id: Date.now(), name: 'Contoh Menu', price: 10000, color: '#4f46e5' }
+    ];
+
+    let transactions = JSON.parse(localStorage.getItem('pos_v1_tx')) || [];
+    let cart = [];
+
+    // --- CORE LOGIC ---
+    function formatRupiah(num) {
+      return 'Rp ' + Number(num).toLocaleString('id-ID');
     }
 
-    function hitung() {
-        const t = (Number(document.getElementById('berat').value) || 0) * (Number(document.getElementById('harga').value) || 0);
-        document.getElementById('total-display').innerText = "Rp " + t.toLocaleString();
+    function getInitials(name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
     }
 
-    function updateDashboard() {
-        const h = new Date().toISOString().slice(0,10);
-        const o = db_trx.filter(x => x.tgl.startsWith(h)).reduce((a,b) => a + b.total, 0);
-        const b = db_biaya.filter(x => x.tgl.startsWith(h)).reduce((a,b) => a + b.nominal, 0);
-        document.getElementById('dash-saldo').innerText = "Rp " + (o - b).toLocaleString();
+    function updateDate() {
+      const now = new Date();
+      document.getElementById('current-date').textContent = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
     }
 
-    // FUNGSI BUAT PDF (PENGGANTI PRINT YANG GAGAL)
-    function buatPDF(judul, isiTeks) {
-        const doc = new jsPDF({ unit: 'mm', format: [80, 150] }); // Ukuran kertas thermal
-        doc.setFont("courier", "bold");
-        doc.text("BUMDes MANDIRI", 40, 10, { align: "center" });
-        doc.setFontSize(10);
-        doc.text(new Date().toLocaleString(), 40, 16, { align: "center" });
-        doc.text("--------------------------", 40, 22, { align: "center" });
-        
-        let y = 30;
-        isiTeks.forEach(line => {
-            doc.text(line, 5, y);
-            y += 7;
-        });
-
-        doc.text("--------------------------", 40, y+5, { align: "center" });
-        doc.text("Terima Kasih", 40, y+12, { align: "center" });
-        doc.save(`${judul}.pdf`);
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('nav button').forEach(el => el.classList.remove('nav-active'));
+      
+      document.getElementById('content-' + tabId).classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('nav-active');
+      
+      if(tabId === 'kasir') renderMenuGrid();
+      if(tabId === 'menu') renderMenuListAdmin();
+      if(tabId === 'laporan') updateReports();
     }
 
-    function simpanTrx() {
-        const adm = document.getElementById('admin').value || 'Petugas';
-        const kg = Number(document.getElementById('berat').value);
-        const hrg = Number(document.getElementById('harga').value);
-        if(!kg) return alert("Isi Berat!");
-
-        const item = { id: Date.now(), tgl: new Date().toISOString(), adm, kg, hrg, total: kg * hrg };
-        db_trx.push(item);
-        localStorage.setItem('db_final_v21_trx', JSON.stringify(db_trx));
-
-        const rincian = [
-            `Admin  : ${item.adm}`,
-            `Berat  : ${item.kg} Kg`,
-            `Harga  : Rp ${item.hrg.toLocaleString()}`,
-            ` `,
-            `TOTAL  : Rp ${item.total.toLocaleString()}`
-        ];
-        buatPDF("Nota_BUMDes", rincian);
-        
-        document.getElementById('berat').value = ""; hitung(); updateDashboard();
+    // --- MANAJEMEN MENU ---
+    function renderMenuGrid() {
+      const grid = document.getElementById('menu-grid');
+      grid.innerHTML = menuItems.map(item => `
+        <button onclick="addToCart(${item.id})" class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 text-left hover:border-indigo-400 transition active:scale-95">
+          <div class="item-icon-circle" style="background-color: ${item.color}">${getInitials(item.name)}</div>
+          <p class="font-bold text-slate-800 text-[13px] leading-tight mb-1 truncate">${item.name}</p>
+          <p class="text-indigo-600 font-bold mono text-[11px]">${formatRupiah(item.price)}</p>
+        </button>
+      `).join('');
     }
 
-    function simpanBiaya() {
-        const ket = document.getElementById('ket-biaya').value;
-        const nom = Number(document.getElementById('nom-biaya').value);
-        if(!nom) return alert("Isi nominal!");
-        db_biaya.push({ id: Date.now(), tgl: new Date().toISOString(), ket, nominal: nom });
-        localStorage.setItem('db_final_v21_biaya', JSON.stringify(db_biaya));
-        document.getElementById('ket-biaya').value = ""; document.getElementById('nom-biaya').value = "";
-        renderBiaya(); updateDashboard();
+    function renderMenuListAdmin() {
+      const list = document.getElementById('menu-list-admin');
+      list.innerHTML = menuItems.map(item => `
+        <div class="p-4 flex justify-between items-center bg-white">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-xs" style="background-color: ${item.color}">${getInitials(item.name)}</div>
+            <div>
+              <p class="font-bold text-slate-800 text-sm">${item.name}</p>
+              <p class="text-xs text-slate-500 mono">${formatRupiah(item.price)}</p>
+            </div>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="editMenu(${item.id})" class="p-2 text-blue-500 bg-blue-50 rounded-lg text-xs font-bold">EDIT</button>
+            <button onclick="deleteMenu(${item.id})" class="p-2 text-red-500 bg-red-50 rounded-lg text-xs font-bold">HAPUS</button>
+          </div>
+        </div>
+      `).join('');
     }
 
-    function renderBiaya() {
-        document.getElementById('list-biaya-full').innerHTML = db_biaya.slice().reverse().map(b => `
-            <div class="app-card d-flex justify-content-between py-2 border-end border-danger border-4">
-                <div><b class="small text-uppercase">${b.ket}</b><br><small class="text-muted">${b.tgl.slice(0,10)}</small></div>
-                <b class="text-danger">Rp ${b.nominal.toLocaleString()}</b>
-            </div>`).join('') || '<p class="text-center small py-3">Kosong</p>';
+    function openMenuModal() {
+      document.getElementById('modal-menu-title').textContent = "Tambah Menu";
+      document.getElementById('edit-id').value = "";
+      document.getElementById('menu-name').value = "";
+      document.getElementById('menu-price').value = "";
+      document.getElementById('modal-menu').classList.remove('hidden');
     }
 
-    function renderRiwayat() {
-        document.getElementById('list-riwayat').innerHTML = db_trx.slice().reverse().map(x => `
-            <div class="app-card shadow-sm">
-                <div class="d-flex justify-content-between border-bottom pb-2 mb-2">
-                    <div><b class="small text-uppercase">${x.adm}</b><br><small class="text-muted">${x.tgl.replace('T',' ').slice(0,16)}</small></div>
-                    <b class="text-primary">Rp ${x.total.toLocaleString()}</b>
-                </div>
-                <div class="d-flex justify-content-between small fw-bold text-secondary">
-                    <span>${x.kg} Kg</span>
-                    <span>@ Rp ${x.hrg.toLocaleString()}</span>
-                </div>
-            </div>`).join('') || '<p class="text-center small py-5">Kosong</p>';
+    function closeMenuModal() { document.getElementById('modal-menu').classList.add('hidden'); }
+
+    function saveMenu() {
+      const id = document.getElementById('edit-id').value;
+      const name = document.getElementById('menu-name').value;
+      const price = parseInt(document.getElementById('menu-price').value);
+      const color = document.getElementById('menu-color').value;
+
+      if(!name || !price) return alert("Isi data dengan lengkap!");
+
+      if(id) {
+        const index = menuItems.findIndex(m => m.id == id);
+        menuItems[index] = { ...menuItems[index], name, price, color };
+      } else {
+        menuItems.push({ id: Date.now(), name, price, color });
+      }
+
+      localStorage.setItem('pos_v1_menu', JSON.stringify(menuItems));
+      closeMenuModal();
+      renderMenuListAdmin();
+      renderMenuGrid();
     }
 
-    function updateLaporan() {
-        const d = document.getElementById('tgl-lap').value;
-        const m = document.getElementById('bln-lap').value;
-        if(d) {
-            const o = db_trx.filter(x => x.tgl.startsWith(d)).reduce((a,b)=>a+b.total,0);
-            const b = db_biaya.filter(x => x.tgl.startsWith(d)).reduce((a,b)=>a+b.nominal,0);
-            document.getElementById('res-harian').innerHTML = `Laba: Rp ${(o-b).toLocaleString()}`;
-        }
-        if(m) {
-            const oM = db_trx.filter(x => x.tgl.startsWith(m)).reduce((a,b)=>a+b.total,0);
-            const bM = db_biaya.filter(x => x.tgl.startsWith(m)).reduce((a,b)=>a+b.nominal,0);
-            document.getElementById('res-bulanan').innerHTML = `Laba: Rp ${(oM-bM).toLocaleString()}`;
-        }
+    function deleteMenu(id) {
+      if(confirm("Hapus menu ini?")) {
+        menuItems = menuItems.filter(m => m.id != id);
+        localStorage.setItem('pos_v1_menu', JSON.stringify(menuItems));
+        renderMenuListAdmin();
+      }
     }
 
-    function cetakLaporan(tipe) {
-        const isi = (tipe === 'Harian') ? document.getElementById('res-harian').innerText : document.getElementById('res-bulanan').innerText;
-        buatPDF("Laporan_"+tipe, [`Laporan ${tipe}`, isi]);
+    function editMenu(id) {
+      const item = menuItems.find(m => m.id == id);
+      document.getElementById('modal-menu-title').textContent = "Edit Menu";
+      document.getElementById('edit-id').value = item.id;
+      document.getElementById('menu-name').value = item.name;
+      document.getElementById('menu-price').value = item.price;
+      document.getElementById('menu-color').value = item.color;
+      document.getElementById('modal-menu').classList.remove('hidden');
     }
 
-    function exportExcel() {
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db_trx), "Transaksi");
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(db_biaya), "Biaya");
-        XLSX.writeFile(wb, "Backup_BUMDes.xlsx");
+    // --- KERANJANG ---
+    function addToCart(id) {
+      const item = menuItems.find(m => m.id == id);
+      const inCart = cart.find(c => c.id == id);
+      if(inCart) {
+        inCart.qty++;
+      } else {
+        cart.push({ ...item, qty: 1 });
+      }
+      renderCart();
     }
 
-    function importExcel() {
-        const f = document.getElementById('file-import').files[0];
-        if(!f) return alert("Pilih file!");
-        const r = new FileReader();
-        r.onload = (e) => {
-            const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
-            db_trx = XLSX.utils.sheet_to_json(wb.Sheets.Transaksi) || [];
-            db_biaya = XLSX.utils.sheet_to_json(wb.Sheets.Biaya) || [];
-            localStorage.setItem('db_final_v21_trx', JSON.stringify(db_trx));
-            localStorage.setItem('db_final_v21_biaya', JSON.stringify(db_biaya));
-            alert("Berhasil!"); location.reload();
-        };
-        r.readAsArrayBuffer(f);
+    function renderCart() {
+      const list = document.getElementById('cart-items');
+      if(cart.length === 0) {
+        list.innerHTML = `<p class="text-center text-slate-400 text-xs py-10">Keranjang kosong</p>`;
+        document.getElementById('cart-total').textContent = "Rp 0";
+        document.getElementById('btn-pay').disabled = true;
+        return;
+      }
+      
+      let total = 0;
+      list.innerHTML = cart.map((item, index) => {
+        total += item.price * item.qty;
+        return `
+          <div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl">
+            <div class="flex-1">
+              <p class="text-[12px] font-bold text-slate-800">${item.name}</p>
+              <p class="text-[10px] text-slate-500">${formatRupiah(item.price)} x ${item.qty}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="updateQty(${index}, -1)" class="w-6 h-6 bg-white border rounded flex items-center justify-center font-bold text-xs">-</button>
+              <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+              <button onclick="updateQty(${index}, 1)" class="w-6 h-6 bg-white border rounded flex items-center justify-center font-bold text-xs">+</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+      
+      document.getElementById('cart-total').textContent = formatRupiah(total);
+      document.getElementById('btn-pay').disabled = false;
+      calculateChange();
     }
 
-    function resetData() { if(confirm("Hapus semua?")) { localStorage.clear(); location.reload(); } }
-</script>
-</body>
+    function updateQty(idx, delta) {
+      cart[idx].qty += delta;
+      if(cart[idx].qty <= 0) cart.splice(idx, 1);
+      renderCart();
+    }
+
+    function clearCart() {
+      cart = [];
+      document.getElementById('payment-input').value = "";
+      renderCart();
+    }
+
+    function calculateChange() {
+      const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const pay = parseInt(document.getElementById('payment-input').value) || 0;
+      const change = pay - total;
+      document.getElementById('change-amount').textContent = formatRupiah(Math.max(0, change));
+    }
+
+    // --- TRANSAKSI & PRINT ---
+    function processPayment() {
+      const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
+      const pay = parseInt(document.getElementById('payment-input').value) || 0;
+      
+      if(pay < total) return alert("Uang bayar kurang!");
+
+      const tx = {
+        id: "TRX" + Date.now(),
+        date: new Date().toISOString(),
+        items: [...cart],
+        total: total,
+        pay: pay,
+        change: pay - total
+      };
+
+      transactions.unshift(tx);
+      localStorage.setItem('pos_v1_tx', JSON.stringify(transactions));
+      
+      // Kirim ke Google Sheets (jika ada ID)
+      if(settings.sheetId) {
+        sendToSheet(tx);
+      }
+
+      // PRINT RAWBT
+      printThermal(tx);
+
+      alert("Transaksi Berhasil!");
+      clearCart();
+    }
+
+    function printThermal(tx) {
+      const date = new Date(tx.date);
+      let p = `${settings.storeName}\n${settings.storeAddress}\nTelp: ${settings.storePhone}\n`;
+      p += `--------------------------------\n`;
+      p += `ID  : ${tx.id.slice(-6)}\n`;
+      p += `TGL : ${date.toLocaleDateString()} ${date.toLocaleTimeString()}\n`;
+      p += `--------------------------------\n`;
+      tx.items.forEach(i => {
+        p += `${i.name.substring(0,20).padEnd(20)} x${i.qty}\n`;
+        p += `${formatRupiah(i.price * i.qty).padStart(32)}\n`;
+      });
+      p += `--------------------------------\n`;
+      p += `TOTAL   : ${formatRupiah(tx.total).padStart(22)}\n`;
+      p += `BAYAR   : ${formatRupiah(tx.pay).padStart(22)}\n`;
+      p += `KEMBALI : ${formatRupiah(tx.change).padStart(22)}\n`;
+      p += `--------------------------------\n`;
+      p += `\n${settings.footer}\n\n\n\n`;
+
+      const base64 = btoa(p);
+      window.location.href = `rawbt:base64,${base64}`;
+    }
+
+    // --- LAPORAN & TOOLS ---
+    function updateReports() {
+      const today = new Date().toLocaleDateString();
+      const todayTx = transactions.filter(t => new Date(t.date).toLocaleDateString() === today);
+      
+      const total = todayTx.reduce((sum, t) => sum + t.total, 0);
+      document.getElementById('report-total').textContent = formatRupiah(total);
+      document.getElementById('report-count').textContent = todayTx.length;
+
+      const list = document.getElementById('transaction-list');
+      list.innerHTML = transactions.slice(0, 10).map(t => `
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex justify-between items-center">
+          <div>
+            <p class="text-[10px] font-bold text-indigo-600 mb-1">${t.id}</p>
+            <p class="text-xs font-bold text-slate-800">${formatRupiah(t.total)}</p>
+            <p class="text-[9px] text-slate-500">${new Date(t.date).toLocaleString()}</p>
+          </div>
+          <button onclick='printThermal(${JSON.stringify(t)})' class="p-2 bg-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold">RE-PRINT</button>
+        </div>
+      `).join('');
+    }
+
+    function exportToExcel() {
+      const data = transactions.map(t => ({
+        ID: t.id,
+        Waktu: new Date(t.date).toLocaleString(),
+        Total: t.total,
+        Bayar: t.pay,
+        Produk: t.items.map(i => `${i.name}(${i.qty})`).join(', ')
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+      XLSX.writeFile(wb, "Laporan_POS.xlsx");
+    }
+
+    function exportBackup() {
+      const data = { settings, menuItems, transactions };
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_pos_${Date.now()}.json`;
+      a.click();
+    }
+
+    function importBackup(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if(confirm("Timpa data saat ini dengan data backup?")) {
+            localStorage.setItem('pos_v1_settings', JSON.stringify(imported.settings));
+            localStorage.setItem('pos_v1_menu', JSON.stringify(imported.menuItems));
+            localStorage.setItem('pos_v1_tx', JSON.stringify(imported.transactions));
+            location.reload();
+          }
+        } catch(err) { alert("File tidak valid!"); }
+      };
+      reader.readAsText(file);
+    }
+
+    function resetAllData() {
+      if(confirm("Hapus seluruh data (Menu & Transaksi)?")) {
+        localStorage.clear();
+        location.reload();
+      }
+    }
+
+    // --- SETTINGS ---
+    function openSettings() {
+      document.getElementById('set-store-name').value = settings.storeName;
+      document.getElementById('set-store-address').value = settings.storeAddress;
+      document.getElementById('set-store-phone').value = settings.storePhone;
+      document.getElementById('set-gsheet-id').value = settings.sheetId || "";
+      document.getElementById('modal-settings').classList.remove('hidden');
+    }
+
+    function closeSettings() { document.getElementById('modal-settings').classList.add('hidden'); }
+
+    function saveSettings() {
+      settings.storeName = document.getElementById('set-store-name').value;
+      settings.storeAddress = document.getElementById('set-store-address').value;
+      settings.storePhone = document.getElementById('set-store-phone').value;
+      settings.sheetId = document.getElementById('set-gsheet-id').value;
+      
+      localStorage.setItem('pos_v1_settings', JSON.stringify(settings));
+      document.getElementById('header-store-name').textContent = settings.storeName;
+      document.getElementById('header-address').textContent = settings.storeAddress;
+      closeSettings();
+    }
+
+    // --- INIT ---
+    function init() {
+      document.getElementById('header-store-name').textContent = settings.storeName;
+      document.getElementById('header-address').textContent = settings.storeAddress;
+      updateDate();
+      renderMenuGrid();
+      setInterval(updateDate, 60000);
+    }
+
+    init();
+  </script>
+ </body>
 </html>
